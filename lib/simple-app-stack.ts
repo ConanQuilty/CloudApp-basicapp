@@ -22,7 +22,7 @@ export class SimpleAppStack extends cdk.Stack {
     });
 
     const simpleFnURL = simpleFn.addFunctionUrl({
-      authType: lambda.FunctionUrlAuthType.AWS_IAM,
+      authType: lambda.FunctionUrlAuthType.NONE,
       cors: {
         allowedOrigins: ["*"],
       },
@@ -79,6 +79,34 @@ export class SimpleAppStack extends cdk.Stack {
     moviesTable.grantReadData(getMovieByIdFn)
 
     new cdk.CfnOutput(this, "Get Movie Function Url", { value: getMovieByIdURL.url });
+
+    //-------------------------
+    // Self Work
+    //-------------------------
+
+    const scanFn = new lambdanode.NodejsFunction(this, "ScanFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_22_X,
+      entry: `${__dirname}/../lambdas/scanCommand.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+          TABLE_NAME: moviesTable.tableName,
+          REGION: cdk.Aws.REGION,
+        },
+    });
+
+    const scanFnUrl = scanFn.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+      cors: {
+        allowedOrigins: ["*"],
+      },
+    });
+    moviesTable.grantReadData(scanFn);
+
+    new cdk.CfnOutput(this, "List Movie Function Url", { value: scanFnUrl.url });
+    
+
 
   }
 }
