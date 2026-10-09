@@ -2,14 +2,18 @@ import { Handler } from "aws-lambda";
 import {
   QueryCommand,
   QueryCommandInput,
+  GetCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { createDDbDocClient, response } from "../shared/util";
-import { MovieCast, MovieCastResponse } from "../shared/types";
+import { MovieCast, Movie, MovieCastResponse } from "../shared/types";
 
 const ddbDocClient = createDDbDocClient();
 
 export const handler: Handler = async (event, context) => {
   try {
+
+
+    
     console.log("Event: ", JSON.stringify(event));
     const queryParams = event.queryStringParameters;
     if (!queryParams) { 
@@ -54,13 +58,38 @@ export const handler: Handler = async (event, context) => {
         },
       };
     }
-    const commandOutput = await ddbDocClient.send(
-      new QueryCommand(commandInput)
-    );
 
+    
+    const commandOutput = await ddbDocClient.send(
+        new QueryCommand(commandInput)
+    );
+    
     const body: MovieCastResponse = {
-      cast: commandOutput.Items as MovieCast[],
+        cast: commandOutput.Items as MovieCast[],
     };
+
+    if (queryParams.facts === "true") {
+          const movieOutput = await ddbDocClient.send(
+            new GetCommand({
+              TableName: process.env.MOVIE_TABLE_NAME,
+              Key: {
+                id: movieId,
+              },
+            })
+          );
+    
+          if (movieOutput.Item) {
+            const movie = movieOutput.Item as Movie;
+    
+            body.movie = {
+              title: movie.title,
+              genre_ids: movie.genre_ids,
+              overview: movie.overview,
+            };
+          }
+        }
+
+
     return response(200, { data: body })
   } catch (error: any) {
     console.log(JSON.stringify(error));

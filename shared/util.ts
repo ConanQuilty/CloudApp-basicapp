@@ -42,3 +42,8 @@ export const response = (
   headers: { 'content-type': 'application/json', ...headers },
   body: JSON.stringify(body),
 });
+
+export type MovieCastResponse = {
+  cast: MovieCast[],
+  movie?: Pick<Movie, "title" | "genre_ids" | "overview">;
+};
