@@ -47,3 +47,7 @@ export type MovieCastResponse = {
   cast: MovieCast[],
   movie?: Pick<Movie, "title" | "genre_ids" | "overview">;
 };
+
+// Parses a path or query string ID; undefined if it isn't a positive integer.
+export const parseId = (value: string | undefined): number | undefined =>
+  value !== undefined && /^[1-9]\d*$/.test(value) ? Number(value) : undefined;
