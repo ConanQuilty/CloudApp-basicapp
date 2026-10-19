@@ -6,6 +6,8 @@ import * as custom from "aws-cdk-lib/custom-resources";
 import { generateBatch } from "../shared/util";
 import { movies, movieCasts } from "../seed/movies";
 
+import * as apig from "aws-cdk-lib/aws-apigateway";
+
 import { Construct } from 'constructs';
 
 export class RestAPIStack extends cdk.Stack {
@@ -110,6 +112,28 @@ export class RestAPIStack extends cdk.Stack {
     moviesTable.grantReadData(getMovieByIdFn);
     moviesTable.grantReadData(getMovieCastMembersFn);
     movieCastsTable.grantReadData(getMovieCastMembersFn);
+
+    const api = new apig.RestApi(this, "MoviesAPI", {
+      description: "Movies API",
+      deployOptions: {
+        stageName: "dev",
+      },
+      // 👇 enable CORS
+      defaultCorsPreflightOptions: {
+        allowHeaders: ["Content-Type", "X-Amz-Date"],
+        allowMethods: ["OPTIONS", "GET", "POST", "PUT", "PATCH", "DELETE"],
+        allowOrigins: ["*"],
+      },
+    });
+
+    const moviesEndpoint = api.root.addResource("movies");
+    const movieEndpoint = moviesEndpoint.addResource("{movieId}");
+    movieEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieByIdFn));
+    const movieCastEndpoint = movieEndpoint.addResource("cast");
+    movieCastEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getMovieCastMembersFn)
+    );
   }
 }
 
